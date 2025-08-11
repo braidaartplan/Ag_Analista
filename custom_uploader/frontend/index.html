@@ -55,7 +55,7 @@
 
       function onRender(event){
         const { label, multiple: m, accept: a } = event.detail.args;
-        labelEl.textContent = label || "Upload file";
+        labelEl.textContent = label || "Upload um arquivo";
         multiple = Boolean(m);
         try { accept = JSON.parse(a || "[]"); } catch(e){ accept = []; }
         input.multiple = multiple;
