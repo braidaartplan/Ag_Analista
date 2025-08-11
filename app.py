@@ -26,11 +26,6 @@ from utils import doc_text
 # ------------------------------------------------------
 load_dotenv('/Users/braida/Dev/Python/GitHub/agentRAG/.env')
 
-DB_URL = (
-    f"mysql+pymysql://{os.getenv('DB_USUARIO')}:{os.getenv('DB_SENHA')}@"
-    f"{os.getenv('DB_HOST')}/{os.getenv('DB_NOME')}"
-)
-DB_FILE = os.getenv("AGNO_DB_FILE", "tmp/agent.db")
 
 PASTA_ARQUIVOS = Path(__file__).parent / 'arquivos'
 PASTA_ARQUIVOS.mkdir(parents=True, exist_ok=True)
