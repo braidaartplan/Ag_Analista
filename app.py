@@ -24,7 +24,7 @@ from utils import doc_text
 # ------------------------------------------------------
 # Configurações
 # ------------------------------------------------------
-load_dotenv()
+load_dotenv('/Users/braida/Dev/Python/GitHub/agentRAG/.env')
 
 DB_URL = (
     f"mysql+pymysql://{os.getenv('DB_USUARIO')}:{os.getenv('DB_SENHA')}@"
