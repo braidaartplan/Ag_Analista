@@ -9,13 +9,35 @@ from agno.storage.sqlite import SqliteStorage
 from textwrap import dedent
 from agno.memory.v2.memory import Memory
 from agno.memory.v2.db.sqlite import SqliteMemoryDb
+import streamlit as st
 
 
 # Carrega variáveis de ambiente com as chaves de API e credenciais do banco
-load_dotenv('/Users/braida/Dev/Python/Stremlit/GitHub/AgentAgno/.env')
+# Carrega variáveis de ambiente com as chaves de API e credenciais do banco
+def get_db_config():
+    """Carrega configuração do banco de dados"""
+    try:
+        # Streamlit Cloud
+        return {
+            'usuario': st.secrets["DB_USUARIO"],
+            'senha': st.secrets["DB_SENHA"], 
+            'host': st.secrets["DB_HOST"],
+            'nome': st.secrets["DB_NOME"]
+        }
+    except:
+        # Desenvolvimento local
+        from dotenv import load_dotenv
+        load_dotenv('/Users/braida/Dev/Python/Stremlit/GitHub/AgentAgno/.env')
+        return {
+            'usuario': os.getenv('DB_USUARIO'),
+            'senha': os.getenv('DB_SENHA'),
+            'host': os.getenv('DB_HOST'), 
+            'nome': os.getenv('DB_NOME')
+        }
 
-db_url = f"mysql+pymysql://{os.getenv('DB_USUARIO')}:{os.getenv('DB_SENHA')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NOME')}"
-
+# Usar a função
+db_config = get_db_config()
+db_url = f"mysql+pymysql://{db_config['usuario']}:{db_config['senha']}@{db_config['host']}/{db_config['nome']}"
 db_file = "tmp/agent.db"
 db_conversations = SqliteStorage(table_name="Sessoes_Agentes", db_file=db_file)
 
