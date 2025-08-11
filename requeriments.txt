@@ -1,9 +1,10 @@
 streamlit
-python-dotenv
+python-dotenv>=1.0.0
 pymysql
 pandas
-pypdf
+pypdf>=4.2.0
 agno
 openai
 fastapi
 aiofiles 
+

@@ -8,7 +8,7 @@ import streamlit as st
 
 from custom_uploader import custom_uploader
 import base64
-import dotenv
+from dotenv import load_dotenv
 
 from agno.agent import Agent
 from agno.tools.sql import SQLTools
