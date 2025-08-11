@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Custom Uploader</title>
+    <script src="https://cdn.jsdelivr.net/npm/streamlit-component-lib@1.4.0/dist/index.js"></script>
+    <style>
+      :root { --bg:#f8fafc; --border:#d0d5dd; --hover:#eef2f7; --text:#111827; }
+      html, body { margin:0; padding:0; background:transparent; }
+      .wrap { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial;
+              display:flex; align-items:center; justify-content:center; }
+      .btn { display:inline-flex; align-items:center; gap:.5rem; border:1px solid var(--border);
+             background:var(--bg); color:var(--text); padding:10px 14px; border-radius:10px;
+             box-shadow:0 1px 1px rgba(16,24,40,.04); cursor:pointer; font-weight:600; user-select:none; }
+      .btn:hover { background:var(--hover); }
+      .hidden { display:none; }
+      .label { margin-right:.25rem; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <button id="btn" class="btn">
+        <span id="label" class="label">Upload file</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <path d="M12 16V4m0 0l-4 4m4-4l4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6 20h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <input id="input" type="file" class="hidden" />
+    </div>
+
+    <script>
+      const btn = document.getElementById("btn");
+      const input = document.getElementById("input");
+      const labelEl = document.getElementById("label");
+
+      let multiple = false;
+      let accept = [];
+
+      function setHeight(){ Streamlit.setFrameHeight(48); }
+
+      function toBase64Async(file){
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result;
+            const base64 = String(dataUrl).split(",").slice(1).join(",");
+            resolve({ name:file.name, type:file.type||"", size:file.size||0, base64 });
+          };
+          reader.onerror = (e) => reject(e);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function onRender(event){
+        const { label, multiple: m, accept: a } = event.detail.args;
+        labelEl.textContent = label || "Upload file";
+        multiple = Boolean(m);
+        try { accept = JSON.parse(a || "[]"); } catch(e){ accept = []; }
+        input.multiple = multiple;
+        input.accept = accept.join(",");
+        setHeight();
+      }
+
+      function sendValue(val){ Streamlit.setComponentValue(val); }
+
+      btn.addEventListener("click", () => input.click());
+      input.addEventListener("change", async () => {
+        const files = Array.from(input.files || []);
+        if (!files.length){ sendValue(null); return; }
+        try {
+          const mapped = await Promise.all(files.map(toBase64Async));
+          sendValue(multiple ? mapped : mapped[0]);
+        } catch(e){
+          console.error(e);
+          sendValue({ error:String(e) });
+        }
+      });
+
+      Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, onRender);
+      Streamlit.setComponentReady(); setHeight();
+    </script>
+  </body>
+</html>

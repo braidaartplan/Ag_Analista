@@ -1,0 +1,9 @@
+streamlit
+python-dotenv
+pymysql
+pandas
+pypdf
+agno
+openai
+fastapi
+aiofiles 
