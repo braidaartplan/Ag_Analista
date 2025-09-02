@@ -95,7 +95,7 @@ def get_agent_assistente(
         session_id=session_id,
         tools=[SQLTools(db_url=db_url)],
         model=model,
-        num_history_runs=5,
+        num_history_runs=10,
         memory=memory,
         add_history_to_messages=True,
         show_tool_calls=True,
