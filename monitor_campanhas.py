@@ -45,7 +45,7 @@ db_conversations = SqliteStorage(table_name="Sessoes_Agentes", db_file=db_file)
 def get_agent_assistente(
         user_id: Optional[str] = None,
         session_id: Optional[str] = None,
-        model_name: str = "gpt-4.1-mini",
+        model_name: str = "gpt-5-nano",
         debug_mode: bool = True,
 ) -> Agent:
     """Retorna o agente configurado para análise de campanhas."""
