@@ -100,7 +100,7 @@ def get_agent_assistente(
         add_history_to_messages=True,
         show_tool_calls=True,
         add_datetime_to_instructions=True,
-        debug_mode=debug_mode,
+        debug_mode=False,
         read_tool_call_history=True,
         storage=db_conversations,
         description=description,

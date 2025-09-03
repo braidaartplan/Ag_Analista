@@ -24,7 +24,7 @@ from utils import doc_text
 # ------------------------------------------------------
 # Configurações
 # ------------------------------------------------------
-load_dotenv('/Users/braida/Dev/Python/GitHub/agentRAG/.env')
+load_dotenv()  # Carrega o .env do diretório atual
 
 
 PASTA_ARQUIVOS = Path(__file__).parent / 'arquivos'
@@ -58,23 +58,46 @@ def get_reader(file_type: str):
     return readers.get(file_type.lower(), None)
 
 def _extract_text(raw_resp) -> str:
-    """Extrai texto de diferentes shapes de retorno do agente."""
-    if getattr(raw_resp, "content", None):
-        return raw_resp.content
-    msg = getattr(raw_resp, "message", None)
-    if msg and getattr(msg, "content", None):
-        return msg.content
-    msgs = getattr(raw_resp, "messages", None)
-    if msgs:
-        last = msgs[-1]
-        if isinstance(last, dict):
-            return last.get("content") or str(last)
-        return getattr(last, "content", None) or str(last)
-    if getattr(raw_resp, "text", None):
-        return raw_resp.text
-    if getattr(raw_resp, "output_text", None):
-        return raw_resp.output_text
-    return str(raw_resp)
+    """Extrai texto de diferentes shapes de retorno do agente, preservando formatação."""
+    # Tenta extrair conteúdo de diferentes estruturas
+    content = None
+    
+    # Verifica atributo content direto
+    if hasattr(raw_resp, "content") and raw_resp.content:
+        content = raw_resp.content
+    
+    # Verifica message.content
+    elif hasattr(raw_resp, "message") and raw_resp.message:
+        if hasattr(raw_resp.message, "content") and raw_resp.message.content:
+            content = raw_resp.message.content
+    
+    # Verifica messages[-1].content
+    elif hasattr(raw_resp, "messages") and raw_resp.messages:
+        last_msg = raw_resp.messages[-1]
+        if isinstance(last_msg, dict):
+            content = last_msg.get("content")
+        elif hasattr(last_msg, "content"):
+            content = last_msg.content
+    
+    # Verifica outros atributos comuns
+    elif hasattr(raw_resp, "text") and raw_resp.text:
+        content = raw_resp.text
+    elif hasattr(raw_resp, "output_text") and raw_resp.output_text:
+        content = raw_resp.output_text
+    elif hasattr(raw_resp, "response") and raw_resp.response:
+        content = raw_resp.response
+    
+    # Se encontrou conteúdo, processa e limpa
+    if content:
+        # Remove caracteres de controle e espaços extras
+        content = str(content).strip()
+        # Remove sequências de escape comuns
+        content = content.replace('\\n', '\n').replace('\\t', '\t')
+        return content
+    
+    # Fallback para conversão direta
+    result = str(raw_resp).strip()
+    return result if result and result != "None" else "❌ Não foi possível extrair resposta do agente."
 
 def _doc_text(doc) -> str:
     # aceita Document, dict ou string
@@ -172,6 +195,8 @@ def sidebar():
         st.session_state.model_name = selected_model
         st.session_state.agent = None  # força recriação
         st.toast(f"Modelo alterado para: {selected_model}", icon="🤖")
+
+    # Toggle removido - sem reasoning
 
     # --- Filtros de data/cliente ---
     today = date.today()
@@ -318,8 +343,10 @@ def pagina_chat():
         # Executa o agente e renderiza a resposta
         with st.spinner("Analisando…"):
             try:
+                # Execução simples do agente
                 raw_resp = st.session_state.agent.run(final_prompt)
                 answer = _extract_text(raw_resp)
+                            
             except Exception as e:
                 answer = f"❌ Erro ao processar: {e}"
 
