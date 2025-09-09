@@ -20,12 +20,17 @@ from agno.document.reader.pdf_reader import PDFReader
 from agno.document.reader.csv_reader import CSVReader
 
 from utils import doc_text
+from chat_manager import ChatManager
+from auth_service import AuthService
 
 # ------------------------------------------------------
 # Configurações
 # ------------------------------------------------------
 load_dotenv()  # Carrega o .env do diretório atual
 
+# Inicializa o gerenciador de chats e serviço de autenticação
+chat_manager = ChatManager()
+auth_service = AuthService()
 
 PASTA_ARQUIVOS = Path(__file__).parent / 'arquivos'
 PASTA_ARQUIVOS.mkdir(parents=True, exist_ok=True)
@@ -39,8 +44,8 @@ CLIENTES = [
 ]
 
 MODELOS_OPENAI = [
-    "gpt-5-mini",
     "gpt-5-nano",
+    "gpt-5-mini",
     "gpt-5",
     "gpt-4o",
     "gpt-4.1",    
@@ -121,6 +126,136 @@ def _doc_text(doc) -> str:
     # último recurso
     return str(doc)
 
+def authenticate_user():
+    """Sistema de autenticação com verificação de email."""
+    if "user_id" not in st.session_state:
+        st.session_state.user_id = None
+        st.session_state.username = None
+        st.session_state.user_email = None
+    
+    if not st.session_state.user_id:
+        st.title("🔐 Login")
+        st.markdown("Digite seu email para acessar o sistema:")
+        
+        # Tabs para Login e Cadastro
+        tab_login, tab_cadastro = st.tabs(["Login", "Cadastro"])
+        
+        with tab_login:
+            st.subheader("Fazer Login")
+            email_login = st.text_input("Email:", key="login_email", placeholder="seu@email.com")
+            senha_login = st.text_input("Senha (Mínimo 6 caracteres):", type="password", key="login_password", 
+                                      help="Deixe em branco se não tiver senha cadastrada")
+            
+            if st.button("Entrar", type="primary", key="btn_login"):
+                if email_login.strip():
+                    sucesso, mensagem, user_data = auth_service.authenticate_user_by_email(
+                        email_login.strip(), 
+                        senha_login.strip() if senha_login.strip() else None
+                    )
+                    
+                    if sucesso and user_data:
+                        st.session_state.user_id = user_data['id']
+                        st.session_state.username = user_data['nome']
+                        st.session_state.user_email = user_data['email']
+                        st.success(mensagem)
+                        st.rerun()
+                    else:
+                        st.error(mensagem)
+                else:
+                    st.error("Por favor, digite um email válido.")
+        
+        with tab_cadastro:
+            st.subheader("Criar Nova Conta")
+            email_cadastro = st.text_input("Email:", key="cadastro_email", placeholder="seu@email.com")
+            nome_cadastro = st.text_input("Nome", key="cadastro_nome", placeholder="Seu Nome")
+            senha_cadastro = st.text_input("Senha:", type="password", key="cadastro_password",
+                                         help="Deixe em branco para acesso sem senha")
+            
+            if st.button("Criar Conta", type="secondary", key="btn_cadastro"):
+                if email_cadastro.strip() and nome_cadastro.strip():
+                    sucesso, mensagem, user_id = auth_service.create_user_with_email(
+                        email_cadastro.strip(),
+                        nome_cadastro.strip(),
+                        senha_cadastro.strip() if senha_cadastro.strip() else None
+                    )
+                    
+                    if sucesso and user_id:
+                        st.success(mensagem)
+                        st.info("Agora você pode fazer login com seu email.")
+                    else:
+                        st.error(mensagem)
+                else:
+                    st.error("Por favor, preencha email e nome.")
+        
+        return False
+    
+    return True
+
+def render_chat_sidebar():
+    """Renderiza a sidebar com o histórico de chats."""
+    # Cabeçalho com usuário e logout
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"**👤 {st.session_state.username}**")
+    with col2:
+        if st.button("🚪", help="Logout", key="logout_btn"):
+            # Limpa sessão
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
+            st.rerun()
+    
+    st.markdown("### 💬 Conversas")
+    
+    # Botão para nova conversa
+    if st.button("➕ Nova Conversa", use_container_width=True):
+        # Cria nova sessão
+        session_id = chat_manager.create_session(st.session_state.user_id)
+        st.session_state.current_session_id = session_id
+        st.session_state.history = []
+        st.session_state.agent = None  # força recriação do agente
+        st.rerun()
+    
+    st.markdown("---")
+    
+    # Lista de conversas
+    sessions = chat_manager.get_user_sessions(st.session_state.user_id)
+    
+    if not sessions:
+        st.markdown("*Nenhuma conversa ainda*")
+        return
+    
+    for session in sessions:
+        # Trunca o título se muito longo
+        display_title = session['title']
+        if len(display_title) > 30:
+            display_title = display_title[:27] + "..."
+        
+        # Botão para cada conversa
+        col1, col2 = st.columns([4, 1])
+        
+        with col1:
+            if st.button(
+                display_title,
+                key=f"session_{session['id']}",
+                use_container_width=True,
+                help=f"Criado em: {session['created_at']}"
+            ):
+                # Carrega a conversa selecionada
+                st.session_state.current_session_id = session['id']
+                messages = chat_manager.get_session_messages(session['id'])
+                st.session_state.history = messages
+                st.session_state.agent = None  # força recriação do agente
+                st.rerun()
+        
+        with col2:
+            if st.button("🗑️", key=f"delete_{session['id']}", help="Deletar conversa"):
+                chat_manager.delete_session(session['id'])
+                # Se era a conversa atual, limpa
+                if st.session_state.get('current_session_id') == session['id']:
+                    st.session_state.current_session_id = None
+                    st.session_state.history = []
+                st.rerun()
+
 def inject_upload_button_styles():
     """Estiliza o file_uploader para parecer um botão, sem quebrar o clique."""
     st.markdown(
@@ -174,11 +309,15 @@ def inject_upload_button_styles():
     )
 
 # ------------------------------------------------------
-# Sidebar (Upload + Filtros + Modelo)
+# Sidebar (Chats + Upload + Filtros + Modelo)
 # ------------------------------------------------------
 def sidebar():
     inject_upload_button_styles()
-
+    
+    # Seção de chats
+    render_chat_sidebar()
+    
+    st.markdown("---")
     st.title("⚙️ Filtros & Configurações")
 
     # --- Seletor de modelo (mantido como você enviou) ---
@@ -205,9 +344,16 @@ def sidebar():
     cliente_sel = st.selectbox("Cliente", options=CLIENTES, index=0)
     cliente_val = cliente_sel
 
-    if st.button("🗑️ Limpar conversa"):
-        st.session_state.history.clear()
-        st.toast("Histórico limpo ✅", icon="🗑️")
+    if st.button("🗑️ Limpar conversa atual"):
+        if st.session_state.current_session_id:
+            chat_manager.delete_session(st.session_state.current_session_id)
+            # Cria nova sessão
+            session_id = chat_manager.create_session(st.session_state.user_id)
+            st.session_state.current_session_id = session_id
+            st.session_state.history.clear()
+            st.session_state.agent = None  # força recriação
+            st.toast("Conversa limpa ✅", icon="🗑️")
+            st.rerun()
 
     st.session_state.sidebar_filters = {
         "start_date": start,
@@ -284,11 +430,19 @@ def render_history():
 # ------------------------------------------------------
 def pagina_chat():
     st.set_page_config(page_title="🎯 Monitoramento de Campanhas", layout="wide")
-    st.header("🤖 Olá, sou seu analista de campanhas", divider=True)
+    
+    # Verifica autenticação
+    if not authenticate_user():
+        return
+    
+    # Mostra informações do usuário logado
+    st.header(f"🤖 Olá {st.session_state.username}, sou seu analista de campanhas", divider=True)
 
     # Estados iniciais
     if "history" not in st.session_state:
         st.session_state.history = []
+    if "current_session_id" not in st.session_state:
+        st.session_state.current_session_id = None
     if "sidebar_filters" not in st.session_state:
         today = date.today()
         st.session_state.sidebar_filters = {
@@ -300,6 +454,11 @@ def pagina_chat():
         st.session_state.model_name = MODELOS_OPENAI[0]
     if "uploaded_docs" not in st.session_state:
         st.session_state.uploaded_docs = ""
+    
+    # Se não há sessão atual, cria uma nova
+    if not st.session_state.current_session_id:
+        session_id = chat_manager.create_session(st.session_state.user_id)
+        st.session_state.current_session_id = session_id
 
     # Sidebar (modelo, filtros e upload)
     with st.sidebar:
@@ -307,9 +466,10 @@ def pagina_chat():
 
     # (Re)cria o agente se necessário (pode ter sido invalidado ao trocar o modelo)
     if "agent" not in st.session_state or st.session_state.agent is None:
-        from monitor_campanhas import get_agent_assistente  # sua factory
+        from monitor_campanhas import get_agent_assistente  
         st.session_state.agent = get_agent_assistente(
-            session_id="sessao_streamlit",
+            user_id=st.session_state.user_id,
+            session_id=st.session_state.current_session_id,
             model_name=st.session_state.model_name
         )
 
@@ -339,6 +499,14 @@ def pagina_chat():
         # Renderiza imediatamente a mensagem do usuário
         st.chat_message("human").markdown(prompt, unsafe_allow_html=True)
         st.session_state.history.append({"role": "user", "content": prompt})
+        
+        # Salva a mensagem do usuário no banco
+        chat_manager.save_message(st.session_state.current_session_id, "user", prompt, st.session_state.user_id)
+        
+        # Se é a primeira mensagem, gera um título para a sessão
+        if len(st.session_state.history) == 1:
+            title = chat_manager.generate_session_title(prompt)
+            chat_manager.update_session_title(st.session_state.current_session_id, title)
 
         # Executa o agente e renderiza a resposta
         with st.spinner("Analisando…"):
@@ -352,6 +520,9 @@ def pagina_chat():
 
         st.chat_message("ai").markdown(answer, unsafe_allow_html=True)
         st.session_state.history.append({"role": "assistant", "content": answer})
+        
+        # Salva a resposta do agente no banco
+        chat_manager.save_message(st.session_state.current_session_id, "assistant", answer, st.session_state.user_id)
 
 # ------------------------------------------------------
 # Main

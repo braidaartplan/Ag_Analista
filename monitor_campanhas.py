@@ -12,6 +12,7 @@ from agno.memory.v2.db.sqlite import SqliteMemoryDb
 import streamlit as st
 
 
+
 # Carrega variáveis de ambiente com as chaves de API e credenciais do banco
 # Carrega variáveis de ambiente com as chaves de API e credenciais do banco
 def get_db_config():
@@ -55,23 +56,8 @@ def get_agent_assistente(
     memory = Memory(
         model=model,
         db=SqliteMemoryDb(table_name="Memoria_usuario", db_file=db_file)
-    )
-    
-    description = dedent("""
-        Você é um analista de dados de marketing digital com experiência em campanhas pagas. Sua tarefa é realizar o acompanhamento semanal das campanhas de marketing dos clientes, com foco na performance dos criativos.
-        Analise os dados da semana e destaque os criativos com melhor e pior desempenho, considerando o objetivo da campanha.
-        Para cada destaque positivo e negativo, apresente as seguintes métricas:
-        Impressões, CPM (Custo por mil impressões)
-        Visualizações até 100%, CPV (Custo por visualização)
-        A análise deve considerar o contexto do objetivo da campanha: por exemplo, para campanhas de alcance, o foco deve estar em impressões e CPM; para campanhas de visualização, dê mais peso para visualizações 100% e CPV.
-        Evite trazer listas longas: selecione apenas os criativos com performance mais relevante — tanto positiva quanto negativa — com base nos dados. 
-        A resposta deve ser estruturada por cliente e campanha, destacando o criativo e suas métricas associadas.
-        Faça:
-        1. 🧠 Um resumo analítico da performance (bom/ruim e por quê)
-        2. 📊 Interpretação dos KPIs principais
-        3. ✅ Recomendações acionáveis para otimização                       
-    """)
-
+    )    
+    description = open('prompts/analista.md').read()        
     instructions = (
         "Sempre que precisar consultar dados, utilize a VIEW Metricas, que contém as seguintes colunas:\n"
         "- Cliente: Nome do cliente responsável pela campanha. Exemplos incluem: Eletrobras, BNDES, CNI, SEBRAE e SEBRAE RJ.\n"
@@ -88,7 +74,6 @@ def get_agent_assistente(
         "- Editoria: Subdivisão editorial dentro da campanha.\n"
         "- Link_do_Anuncio: URL do anúncio correspondente."
     )
-
     return Agent(
         name="sql_agent",
         read_chat_history=True,
@@ -105,6 +90,8 @@ def get_agent_assistente(
         storage=db_conversations,
         description=description,
         instructions=instructions,
+        search_previous_messages=True,
+        cache_session=True
     )
 
 
