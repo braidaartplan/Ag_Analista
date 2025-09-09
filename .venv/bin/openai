@@ -1,4 +1,4 @@
-#!/Users/braida/Dev/Python/GitHub/agentRAG/.venv/bin/python3
+#!/Users/braida/Dev/Python/Trabalho/Artplan/github/ag_analista/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import sys
 from openai.cli import main

@@ -14,4 +14,6 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "sqlalchemy>=2.0.43",
     "streamlit>=1.48.0",
+    "mysql-connector-python>=8.0.33"
+   
 ]
