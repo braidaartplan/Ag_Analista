@@ -7,8 +7,7 @@ from dotenv import load_dotenv
 from agno.playground import Playground, serve_playground_app
 from agno.storage.sqlite import SqliteStorage
 from textwrap import dedent
-from agno.memory.v2.memory import Memory
-from agno.memory.v2.db.sqlite import SqliteMemoryDb
+from agno.memory import AgentMemory
 import streamlit as st
 
 
@@ -53,10 +52,7 @@ def get_agent_assistente(
     
     model = OpenAIChat(id=model_name)
     
-    memory = Memory(
-        model=model,
-        db=SqliteMemoryDb(table_name="Memoria_usuario", db_file=db_file)
-    )    
+    memory = AgentMemory()    
     description = open('prompts/analista.md').read()        
     instructions = (
         "Sempre que precisar consultar dados, utilize a VIEW Metricas, que contém as seguintes colunas:\n"
