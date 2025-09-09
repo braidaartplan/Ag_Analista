@@ -1,8 +1,8 @@
 import os
 from datetime import datetime
 from typing import List, Dict, Optional
-import mysql.connector
-from mysql.connector import Error
+import pymysql
+from pymysql import Error
 import streamlit as st
 from pathlib import Path
 import uuid
@@ -38,14 +38,14 @@ class ChatManager:
     def init_database(self):
         """Inicializa o banco de dados MySQL e verifica se a tabela IA_Memoria existe"""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
                 password=self.db_config['senha']
             )
             
-            if connection.is_connected():
+            if connection.open:
                 cursor = connection.cursor()
                 
                 # Verifica se a tabela IA_Memoria existe
@@ -88,7 +88,7 @@ class ChatManager:
         user_id = str(uuid.uuid4())
         
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -110,14 +110,14 @@ class ChatManager:
             print(f"Erro ao verificar usuário: {e}")
             return username
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
     def get_user_id(self, username: str) -> Optional[str]:
         """Busca o ID do usuário pelo nome (usando a tabela IA_Memoria)."""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -133,7 +133,7 @@ class ChatManager:
             print(f"Erro ao buscar usuário: {e}")
             return username
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -144,7 +144,7 @@ class ChatManager:
             title = f"Chat {datetime.now().strftime('%d/%m/%Y %H:%M')}"
         
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -162,7 +162,7 @@ class ChatManager:
         except Error as e:
             print(f"Erro ao criar sessão: {e}")
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
         
@@ -171,7 +171,7 @@ class ChatManager:
     def get_user_sessions(self, user_id: str) -> List[Dict]:
         """Retorna todas as sessões de um usuário (usando a tabela IA_Memoria)."""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -205,14 +205,14 @@ class ChatManager:
             print(f"Erro ao buscar sessões: {e}")
             return []
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
     def save_message(self, session_id: str, role: str, content: str, user_id: str = None):
         """Salva uma mensagem na tabela IA_Memoria."""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -237,14 +237,14 @@ class ChatManager:
         except Error as e:
             print(f"Erro ao salvar mensagem: {e}")
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
     def get_session_messages(self, session_id: str) -> List[Dict]:
         """Retorna todas as mensagens de uma sessão (usando a tabela IA_Memoria)."""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -274,14 +274,14 @@ class ChatManager:
             print(f"Erro ao buscar mensagens: {e}")
             return []
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
     def update_session_title(self, session_id: str, title: str):
         """Atualiza o título de uma sessão na tabela IA_Memoria."""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -298,7 +298,7 @@ class ChatManager:
         except Error as e:
             print(f"Erro ao atualizar título da sessão: {e}")
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -322,7 +322,7 @@ class ChatManager:
         except Error as e:
             print(f"Erro ao deletar sessão: {e}")
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     

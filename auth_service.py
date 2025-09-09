@@ -2,8 +2,8 @@ import re
 import os
 from datetime import datetime
 from typing import Optional, Dict, Tuple
-import mysql.connector
-from mysql.connector import Error
+import pymysql
+from pymysql import Error
 import streamlit as st
 from pathlib import Path
 import uuid
@@ -40,14 +40,14 @@ class AuthService:
     def init_auth_tables(self):
         """Inicializa as tabelas de autenticação no banco MySQL"""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
                 password=self.db_config['senha']
             )
             
-            if connection.is_connected():
+            if connection.open:
                 cursor = connection.cursor()
                 
                 # Cria tabela de usuários se não existir
@@ -70,7 +70,7 @@ class AuthService:
         except Error as e:
             print(f"Erro ao inicializar tabelas de autenticação: {e}")
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -86,7 +86,7 @@ class AuthService:
     def email_exists(self, email: str) -> bool:
         """Verifica se o email já existe no banco de dados"""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -103,7 +103,7 @@ class AuthService:
             print(f"Erro ao verificar email: {e}")
             return False
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -128,7 +128,7 @@ class AuthService:
             return False, "Este email já está cadastrado no sistema.", None
         
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -166,7 +166,7 @@ class AuthService:
             print(f"Erro ao criar usuário: {e}")
             return False, f"Erro interno do sistema: {str(e)}", None
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -182,7 +182,7 @@ class AuthService:
         email = email.strip().lower()
         
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -225,7 +225,7 @@ class AuthService:
             print(f"Erro ao autenticar usuário: {e}")
             return False, f"Erro interno do sistema: {str(e)}", None
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -241,7 +241,7 @@ class AuthService:
         email = email.strip().lower()
         
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -261,7 +261,7 @@ class AuthService:
             print(f"Erro ao buscar usuário: {e}")
             return None
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
     
@@ -281,7 +281,7 @@ class AuthService:
         senha_hash = hashlib.sha256(nova_senha.encode()).hexdigest()
         
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
@@ -304,6 +304,6 @@ class AuthService:
             print(f"Erro ao atualizar senha: {e}")
             return False, f"Erro interno do sistema: {str(e)}"
         finally:
-            if connection.is_connected():
+            if connection.open:
                 cursor.close()
                 connection.close()
