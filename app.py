@@ -13,7 +13,6 @@ from dotenv import load_dotenv
 from agno.agent import Agent
 from agno.tools.sql import SQLTools
 from agno.models.openai import OpenAIChat
-from agno.memory import AgentMemory
 from agno.storage.sqlite import SqliteStorage
 from agno.document.reader.pdf_reader import PDFReader
 from agno.document.reader.csv_reader import CSVReader
