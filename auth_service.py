@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional, Dict, Tuple
 import pymysql
 from pymysql import Error
+import pymysql.cursors
 import streamlit as st
 from pathlib import Path
 import uuid
@@ -70,8 +71,9 @@ class AuthService:
         except Error as e:
             print(f"Erro ao inicializar tabelas de autenticação: {e}")
         finally:
-            if connection.open:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
+            if 'connection' in locals() and connection.open:
                 connection.close()
     
     def validate_email(self, email: str) -> bool:
@@ -103,8 +105,9 @@ class AuthService:
             print(f"Erro ao verificar email: {e}")
             return False
         finally:
-            if connection.open:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
+            if 'connection' in locals() and connection.open:
                 connection.close()
     
     def create_user_with_email(self, email: str, nome: str, senha: str = None) -> Tuple[bool, str, Optional[str]]:
@@ -189,7 +192,7 @@ class AuthService:
                 password=self.db_config['senha']
             )
             
-            cursor = connection.cursor(dictionary=True)
+            cursor = connection.cursor(pymysql.cursors.DictCursor)
             cursor.execute(
                 "SELECT id, email, nome, senha_hash, ativo FROM usuarios WHERE email = %s AND ativo = TRUE",
                 (email,)
@@ -248,7 +251,7 @@ class AuthService:
                 password=self.db_config['senha']
             )
             
-            cursor = connection.cursor(dictionary=True)
+            cursor = connection.cursor(pymysql.cursors.DictCursor)
             cursor.execute(
                 "SELECT id, email, nome, ativo, created_at FROM usuarios WHERE email = %s AND ativo = TRUE",
                 (email,)
@@ -261,8 +264,9 @@ class AuthService:
             print(f"Erro ao buscar usuário: {e}")
             return None
         finally:
-            if connection.open:
+            if 'cursor' in locals() and cursor:
                 cursor.close()
+            if 'connection' in locals() and connection.open:
                 connection.close()
     
     def update_user_password(self, email: str, nova_senha: str) -> Tuple[bool, str]:
