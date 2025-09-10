@@ -6,6 +6,8 @@ from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
 from agno.playground import Playground, serve_playground_app
 from agno.storage.agent.sqlite import SqliteAgentStorage as SqliteStorage
+from agno.memory.v2.db.sqlite import SqliteMemoryDb
+from agno.memory.v2.memory import Memory
 from textwrap import dedent
 import streamlit as st
 
@@ -39,6 +41,10 @@ db_config = get_db_config()
 db_url = f"mysql+pymysql://{db_config['usuario']}:{db_config['senha']}@{db_config['host']}/{db_config['nome']}"
 db_file = "tmp/agent.db"
 db_conversations = SqliteStorage(table_name="Sessoes_Agentes", db_file=db_file)
+
+# Configuração da nova API de memória v2
+memory_db = SqliteMemoryDb(table_name="agent_memories", db_file="tmp/memory.db")
+memory = Memory(db=memory_db)
 
 
 def get_agent_assistente(
@@ -75,6 +81,7 @@ def get_agent_assistente(
         tools=[SQLTools(db_url=db_url)],
         model=model,
         num_history_runs=10,
+        memory=memory,
         enable_user_memories=True,
         add_history_to_messages=True,
         show_tool_calls=True,
