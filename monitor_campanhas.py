@@ -5,7 +5,7 @@ from agno.tools.sql import SQLTools
 from agno.models.openai import OpenAIChat
 from dotenv import load_dotenv
 from agno.playground import Playground, serve_playground_app
-from agno.storage.sqlite import SqliteStorage
+from agno.storage.agent.sqlite import SqliteAgentStorage as SqliteStorage
 from textwrap import dedent
 import streamlit as st
 
