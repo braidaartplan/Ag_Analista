@@ -5,18 +5,9 @@ import os
 from datetime import date
 from pathlib import Path
 import streamlit as st
-
-from custom_uploader import custom_uploader
-import base64
 from dotenv import load_dotenv
-
-from agno.agent import Agent
-from agno.tools.sql import SQLTools
-from agno.models.openai import OpenAIChat
-from agno.storage.agent.sqlite import SqliteAgentStorage as SqliteStorage
 from agno.document.reader.pdf_reader import PDFReader
 from agno.document.reader.csv_reader import CSVReader
-
 from utils import doc_text
 from chat_manager import ChatManager
 from auth_service import AuthService

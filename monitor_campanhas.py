@@ -12,8 +12,6 @@ from textwrap import dedent
 import streamlit as st
 
 
-
-# Carrega variáveis de ambiente com as chaves de API e credenciais do banco
 # Carrega variáveis de ambiente com as chaves de API e credenciais do banco
 def get_db_config():
     """Carrega configuração do banco de dados"""
@@ -25,16 +23,31 @@ def get_db_config():
             'host': st.secrets["DB_HOST"],
             'nome': st.secrets["DB_NOME"]
         }
-    except:
+    except (KeyError, AttributeError) as e:
         # Desenvolvimento local
         from dotenv import load_dotenv
-        load_dotenv('/Users/braida/Dev/Python/Stremlit/GitHub/AgentAgno/.env')
-        return {
+        import os
+        
+        # Busca .env no diretório atual e pais
+        env_path = Path('.env')
+        if not env_path.exists():
+            env_path = Path('../.env')
+        
+        load_dotenv(env_path)
+        
+        config = {
             'usuario': os.getenv('DB_USUARIO'),
             'senha': os.getenv('DB_SENHA'),
             'host': os.getenv('DB_HOST'), 
             'nome': os.getenv('DB_NOME')
         }
+        
+        # Validação
+        missing = [k for k, v in config.items() if not v]
+        if missing:
+            raise ValueError(f"Variáveis de ambiente faltando: {missing}")
+        
+        return config
 
 # Usar a função
 db_config = get_db_config()
