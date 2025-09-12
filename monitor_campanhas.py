@@ -1,5 +1,6 @@
 import os
 from typing import Optional
+from pathlib import Path
 from agno.agent import Agent
 from agno.tools.sql import SQLTools
 from agno.models.openai import OpenAIChat
@@ -23,7 +24,7 @@ def get_db_config():
             'host': st.secrets["DB_HOST"],
             'nome': st.secrets["DB_NOME"]
         }
-    except (KeyError, AttributeError) as e:
+    except (KeyError, AttributeError, st.errors.StreamlitSecretNotFoundError) as e:
         # Desenvolvimento local
         from dotenv import load_dotenv
         import os

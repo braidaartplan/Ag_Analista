@@ -24,16 +24,30 @@ class ChatManager:
                 'host': st.secrets["DB_HOST"],
                 'nome': st.secrets["DB_NOME"]
             }
-        except:
+        except (KeyError, AttributeError, st.errors.StreamlitSecretNotFoundError):
             # Desenvolvimento local
             from dotenv import load_dotenv
-            load_dotenv('/Users/braida/Dev/Python/Stremlit/GitHub/AgentAgno/.env')
-            return {
+            
+            # Busca .env no diretório atual e pais
+            env_path = Path('.env')
+            if not env_path.exists():
+                env_path = Path('../.env')
+            
+            load_dotenv(env_path)
+            
+            config = {
                 'usuario': os.getenv('DB_USUARIO'),
                 'senha': os.getenv('DB_SENHA'),
                 'host': os.getenv('DB_HOST'), 
                 'nome': os.getenv('DB_NOME')
             }
+            
+            # Validação
+            missing = [k for k, v in config.items() if not v]
+            if missing:
+                raise ValueError(f"Variáveis de ambiente faltando: {missing}. Crie um arquivo .env baseado no .env.example")
+            
+            return config
     
     def init_database(self):
         """Inicializa o banco de dados MySQL e verifica se a tabela IA_Memoria existe"""
@@ -182,7 +196,7 @@ class ChatManager:
             cursor.execute(
                 """SELECT DISTINCT session_id, 
                           COALESCE(MAX(CASE WHEN title IS NOT NULL AND title != '' THEN title END), 
-                                   CONCAT('Chat ', DATE_FORMAT(MIN(created_at), '%d/%m/%Y %H:%i'))) as title,
+                                   CONCAT('Chat ', DATE_FORMAT(MIN(created_at), '%%d/%%m/%%Y %%H:%%i'))) as title,
                           MIN(created_at) as created_at
                    FROM IA_Memoria 
                    WHERE user_id = %s 
@@ -305,7 +319,7 @@ class ChatManager:
     def delete_session(self, session_id: str):
         """Deleta uma sessão e todas suas mensagens da tabela IA_Memoria."""
         try:
-            connection = mysql.connector.connect(
+            connection = pymysql.connect(
                 host=self.db_config['host'],
                 database=self.db_config['nome'],
                 user=self.db_config['usuario'],
